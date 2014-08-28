@@ -1,0 +1,35 @@
+{
+    "name": "aztech/event-bus-extra-wamp",
+    "description": "aztech/event-bus Wamp publisher provider",
+    "keywords": [
+        "event",
+        "events",
+        "dispatch",
+        "aztech",
+        "wamp",
+        "websocket"
+    ],
+    "type": "library",
+    "autoload": {
+        "psr-4": {
+            "Aztech\\Events\\Bus\\Plugins\\Wamp\\": "src/"
+        }
+    },
+    "minimum-stability": "stable",
+    "require": {
+        "aztech/event-bus": "dev-master",
+        "aztech/php-utils": "~0",
+        "cboden/Ratchet": "dev-master",
+        "psr/log": "~1.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "~4.2",
+        "squizlabs/php_codesniffer": "~1.5",
+        "vektah/bugfree-dangerzone": "~0.2"
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "1.0.x-dev"
+        }
+    }
+}
