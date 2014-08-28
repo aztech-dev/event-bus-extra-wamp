@@ -9,7 +9,7 @@
 [![HHVM Status](http://hhvm.h4cc.de/badge/aztech/event-bus-extra-wamp.png)](http://hhvm.h4cc.de/package/aztech/event-bus-extra-wamp)
 
 ## Stability
-
+ 
 [![Latest Stable Version](https://poser.pugx.org/aztech/event-bus-extra-wamp/v/stable.png)](https://packagist.org/packages/aztech/event-bus-extra-wamp)
 [![Latest Unstable Version](https://poser.pugx.org/aztech/event-bus-extra-wamp/v/unstable.png)](https://packagist.org/packages/aztech/event-bus-extra-wamp)
 
