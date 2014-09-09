@@ -19,7 +19,7 @@
     "require": {
         "aztech/event-bus": "~1",
         "aztech/php-utils": "~0",
-        "cboden/Ratchet": "dev-master",
+        "cboden/Ratchet": "~0",
         "psr/log": "~1.0"
     },
     "require-dev": {
