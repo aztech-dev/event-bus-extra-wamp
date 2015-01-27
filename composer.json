@@ -18,7 +18,6 @@
     "minimum-stability": "stable",
     "require": {
         "aztech/event-bus": "~1",
-        "aztech/php-utils": "~1",
         "cboden/Ratchet": "~0",
         "psr/log": "~1.0"
     },
