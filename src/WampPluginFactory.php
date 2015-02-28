@@ -6,9 +6,18 @@ use Aztech\Events\Bus\Channel\ChannelProvider;
 use Aztech\Events\Bus\Factory\GenericOptionsDescriptor;
 use Aztech\Events\Bus\Factory\OptionsDescriptor;
 use Aztech\Events\Bus\PluginFactory;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 class WampPluginFactory implements PluginFactory
 {
+
+    private $logger = null;
+
+    public function __construct(LoggerInterface $logger = null)
+    {
+        $this->logger = $logger ?: new NullLogger();
+    }
 
     /**
      *
@@ -20,6 +29,7 @@ class WampPluginFactory implements PluginFactory
 
         $descriptor->addOption('endpoint', true);
         $descriptor->addOption('realm', true);
+        $descriptor->addOption('topic', false, '');
 
         return $descriptor;
     }
@@ -30,6 +40,6 @@ class WampPluginFactory implements PluginFactory
      */
     function getChannelProvider()
     {
-        return new WampChannelProvider();
+        return new WampChannelProvider($this->logger);
     }
 }
