@@ -2,27 +2,41 @@
 
 namespace Aztech\Events\Bus\Plugins\Wamp;
 
-use Aztech\Events\Event as EventInterface;
-use Aztech\Events\Bus\Event;
+use Aztech\Events\Event;
 use Aztech\Events\Bus\Channel\ChannelWriter;
-use Aztech\Events\Category\Subscription;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
-use Ratchet\ConnectionInterface;
-use Ratchet\Wamp\Topic;
-use Ratchet\Wamp\WampServerInterface;
+use Thruway\ClientSession;
+use Thruway\Connection;
 
-class WampChannelWriter implements ChannelWriter, WampServerInterface, LoggerAwareInterface
+class WampChannelWriter implements ChannelWriter, LoggerAwareInterface
 {
+
+    private $connection;
+
+    private $session;
 
     private $logger;
 
-    private $subscribedTopics = array();
+    private $buffer = null;
 
-    public function __construct()
+    private $isOpen = false;
+
+    private $isPending = false;
+
+    /**
+     * @param string $endpoint
+     * @param string $realm
+     */
+    public function __construct($endpoint, $realm)
     {
         $this->logger = new NullLogger();
+        $this->buffer = new \SplStack();
+        $this->connection = new Connection([
+            'realm' => $realm,
+            'url' => $endpoint
+        ]);
     }
 
     public function setLogger(LoggerInterface $logger)
@@ -30,61 +44,53 @@ class WampChannelWriter implements ChannelWriter, WampServerInterface, LoggerAwa
         $this->logger = $logger;
     }
 
-    public function write(EventInterface $event, $serializedRepresentation)
+    public function write(Event $event, $serializedRepresentation)
     {
-        foreach ($this->subscribedTopics as $name => $subscription) {
-            /* @var $subscription CategorySubscription */
-            if ($subscription->matches($event->getCategory())) {
-                $pubEvent = new Event('publish', array(
-                    'event' => $event,
-                    'data' => $serializedRepresentation
-                ));
+        if (! $this->isOpen) {
+            $this->buffer->push([ $event, $serializedRepresentation ]);
+            $this->open();
+        }
 
-                $subscription->getSubscriber()->handle($pubEvent);
-            }
+        $data = [ 'id' => $event->getId(), 'data' => $serializedRepresentation ];
+
+        $this->session->publish($event->getCategory(), $data, [], [ 'acknowledge' => false ]);
+    }
+
+    public function dispose()
+    {
+        if ($this->isOpen) {
+            $this->connection->close();
         }
     }
 
-    public function onSubscribe(ConnectionInterface $conn, $topic)
+    private function open()
     {
-        if (is_string($topic)) {
-            $topic = new Topic($topic);
-        }
-
-        if (array_key_exists($topic->getId(), $this->subscribedTopics)) {
-            $this->logger->debug(sprintf('Topic "%s" already registered, ignoring.'));
+        if ($this->isPending || $this->isOpen) {
             return;
         }
 
-        $this->logger->debug(sprintf('Registering topic subscription : "%s".', $topic->getId()));
-        $this->subscribedTopics[$topic->getId()] = new Subscription($topic->getId(), new WampTopicSubscriber($topic));
+        $this->isPending = true;
+        $this->connection->on('open', [ $this, 'onConnectionOpen' ]);
+        $this->connection->on('close', [ $this, 'onConnectionClose' ]);
+        $this->connection->open(false);
     }
 
-    public function onUnSubscribe(ConnectionInterface $conn, $topic)
-    {}
-
-    public function onOpen(ConnectionInterface $conn)
+    private function onConnectionOpen(ClientSession $session)
     {
-        $this->logger->debug('Got new connection !');
+        $this->isPending = false;
+        $this->isOpen = true;
+        $this->session = $session;
+
+        while (! $this->buffer->isEmpty()) {
+            $pending = $this->buffer->shift();
+
+            $this->write($pending[0], $pending[1]);
+        }
     }
 
-    public function onClose(ConnectionInterface $conn)
-    {}
-
-    public function onCall(ConnectionInterface $conn, $id, $topic, array $params)
+    private function onConnectionClose()
     {
-        $this->logger->notice('Received unauthorized call, dropping associated connection.');
-        $conn->close();
-    }
-
-    public function onPublish(ConnectionInterface $conn, $topic, $event, array $exclude, array $eligible)
-    {
-        $this->logger->notice('Received unauthorized publish, dropping associated connection.');
-        $conn->close();
-    }
-
-    public function onError(ConnectionInterface $conn, \Exception $e)
-    {
-        $this->logger->error($e->getMessage() . PHP_EOL . $e->getTraceAsString());
+        $this->isOpen = false;
+        $this->session = null;
     }
 }

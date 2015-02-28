@@ -18,7 +18,7 @@
     "minimum-stability": "stable",
     "require": {
         "aztech/event-bus": "~1",
-        "cboden/Ratchet": "~0",
+        "voryx/thruway": "0.3.*",
         "psr/log": "~1.0"
     },
     "require-dev": {
